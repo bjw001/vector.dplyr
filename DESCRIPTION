@@ -6,6 +6,6 @@ Date: 2015-07-15
 Author: HP Vertica Analytics Team, Brent Walter
 Description: Adds Vector backend based on HP vertica.dplyr
 License: GPL (>= 2) | file LICENSE
-Depends: methods, assertthat, dplyr, RJDBC
-Suggests: RODBC, knitr, rmarkdown
+Depends: methods, assertthat, dplyr
+Suggests: RODBC, knitr, rmarkdown, RJDBC
 VignetteBuilder: knitr
