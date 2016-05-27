@@ -1,5 +1,23 @@
 ####################################################################
-#A dplyr connector for the Vertica database.
+#A dplyr connector for the Vectorwise database.
+#Copyright (C) 
+
+#This program is free software; you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation; either version 2 of the License, or (at
+#your option) any later version.
+
+#This program is distributed in the hope that it will be useful, but
+#WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#General Public License for more details.  You should have received a
+#copy of the GNU General Public License along with this program; if
+#not, write to the Free Software Foundation, Inc., 59 Temple Place,
+#Suite 330, Boston, MA 02111-1307 USA
+#####################################################################
+
+####################################################################
+#A dplyr connector for the vector dlibatabase.
 #Copyright (C) [2015] Hewlett-Packard Development Company, L.P.
 
 #This program is free software; you can redistribute it and/or modify
@@ -16,17 +34,17 @@
 #Suite 330, Boston, MA 02111-1307 USA
 #####################################################################
 
-## This file defines the scalar, window, and aggregate functions that are invokable in Vertica, as well as utility functions for UDFs
+## This file defines the scalar, window, and aggregate functions that are invokable in vector, as well as utility functions for UDFs
 
 #' This function shows to the user the names of the funtions, their type, as well as the return and input data types.
 #'
-#' @param src The src_vertica instance from which to query for UDxes.
+#' @param src The src_vector instance from which to query for UDxes.
 #' @param type The UDF type to list (one of "aggregate","scalar", or "transform").
 #' @return A data frame containing four columns: function name, function type, output data type(s), and input data type(s).
 #' @examples
 #' \dontrun{
-#' vertica <- src_vertica("VerticaDSN")
-#' UDF <- list_udf(vertica)
+#' vector <- src_vector("vectorDSN")
+#' UDF <- list_udf(vector)
 #' }
 #' @export
 list_udf <- function(src,type=NULL) {
@@ -42,6 +60,7 @@ list_udf <- function(src,type=NULL) {
     where <- "1=1"
   }
 
+  
   list_udf_query <- paste0("SELECT * FROM (SELECT schema_name,function_name AS UDF_NAME,DECODE(procedure_type,\'User Defined Function\',\'Scalar\',\'User Defined Transform\',\'Transform\',\'User Defined Aggregate \',\'Aggregate\',\'other\') AS PROCEDURE_TYPE,function_return_type AS RETURN_TYPE,function_argument_type AS ARGUMENT_TYPES FROM user_functions) as foo WHERE ", where)
 
  if(src$con@type=="ODBC") {
@@ -119,8 +138,8 @@ udf_helper <- function(params) {
   paramStr
 }
 
-# Generic Vertica window function sql constructor with range and order by parameters.
-vertica_win_func <- function(f) {
+# Generic vector window function sql constructor with range and order by parameters.
+vector_win_func <- function(f) {
   force(f)
   function(..., partition=dplyr:::partition_group(),order=dplyr:::partition_group(), range=NULL) {
     range <- validate_range(range) 
@@ -128,8 +147,8 @@ vertica_win_func <- function(f) {
   }
 }
 
-# Generic Vertica UDF sql constructor for scalar and transform functions.
-vertica_udf <- function(f,transform=FALSE) {
+# Generic vector UDF sql constructor for scalar and transform functions.
+vector_udf <- function(f,transform=FALSE) {
   force(f)
   if(!transform) {
     function(...,params=list()) {
@@ -165,37 +184,44 @@ vertica_udf <- function(f,transform=FALSE) {
 }
 
 # Scalar Functions
-vertica_scalar_func <- sql_translator(.parent=base_scalar)
+vector_scalar_func <- sql_translator(
+  .parent=base_scalar
+  , add_months = function(datetime, n) build_sql("add_months(", datetime, ",", n, ")")
+  , date_format = function(datetime, format) build_sql("date_format(", datetime, ",'", format, "')")
+  , time_format = function(datetime, format) build_sql("time_format(", datetime, ",'", format, "')")
+  , date_part = function(unit, date) build_sql("date_part('", unit, "',", date, ")")
+  , date_trunc = function(unit, date) build_sql("date_trunc(", unit, ",", date, ")")
+  )
 
 # Window Functions
-vertica_window_func <- sql_translator(
-  lag = vertica_win_func("lag"),
-  changed = vertica_win_func("conditional_change_event"),
-  isTrue = vertica_win_func("conditional_true_event"),
-  ntile = vertica_win_func("ntile"),
-  lead = vertica_win_func("lead"),
-  median = vertica_win_func("median"),
-  row_number = vertica_win_func("row_number"),
-  head = vertica_win_func("first_value"),
-  tail = vertica_win_func("last_value"),
-  exp_mvg_avg = vertica_win_func("exponential_moving_average"),
-  percentile_cont = vertica_win_func("percentile_cont"),
-  percentile_disc = vertica_win_func("percentile_disc"),
-  min_rank = vertica_win_func("rank"),
-  rank = vertica_win_func("rank"),
-  dense_rank = vertica_win_func("dense_rank"),
-  percent_rank = vertica_win_func("percent_rank"),
-  cume_dist = vertica_win_func("cume_dist"),
-  row_num = vertica_win_func("row_number"),
-  sd = vertica_win_func("stddev"),
-  sd_pop = vertica_win_func("stddev_pop"),
-  sd_samp = vertica_win_func("stddev_samp"),
-  var_pop = vertica_win_func("var_pop"),
-  var_samp = vertica_win_func("var_samp"),
-  mean = vertica_win_func("avg"),
-  sum = vertica_win_func("sum"),
-  min = vertica_win_func("min"),
-  max = vertica_win_func("max"),
+vector_window_func <- sql_translator(
+  lag = vector_win_func("lag"),
+  changed = vector_win_func("conditional_change_event"),
+  isTrue = vector_win_func("conditional_true_event"),
+  ntile = vector_win_func("ntile"),
+  lead = vector_win_func("lead"),
+  median = vector_win_func("median"),
+  row_number = vector_win_func("row_number"),
+  head = vector_win_func("first_value"),
+  tail = vector_win_func("last_value"),
+  #exp_mvg_avg = vector_win_func("exponential_moving_average"),
+  #percentile_cont = vector_win_func("percentile_cont"),
+  #percentile_disc = vector_win_func("percentile_disc"),
+  min_rank = vector_win_func("rank"),
+  rank = vector_win_func("rank"),
+  dense_rank = vector_win_func("dense_rank"),
+  percent_rank = vector_win_func("percent_rank"),
+  #cume_dist = vector_win_func("cume_dist"),
+  row_num = vector_win_func("row_number"),
+  sd = vector_win_func("stddev"),
+  sd_pop = vector_win_func("stddev_pop"),
+  sd_samp = vector_win_func("stddev_samp"),
+  var_pop = vector_win_func("var_pop"),
+  var_samp = vector_win_func("var_samp"),
+  mean = vector_win_func("avg"),
+  sum = vector_win_func("sum"),
+  min = vector_win_func("min"),
+  max = vector_win_func("max"),
   n = function(
           order=dplyr:::partition_group(), 
           range=c(-Inf,Inf)) {
@@ -205,7 +231,7 @@ vertica_window_func <- sql_translator(
 )
 
 # Aggregate Functions
-vertica_agg_func <- sql_translator(
+vector_agg_func <- sql_translator(
   .parent = base_agg,
    n = function() sql("count(*)")
   ,sd = sql_prefix("stddev",1)
@@ -223,46 +249,46 @@ vertica_agg_func <- sql_translator(
 
 # Powers translations of scalar and window functions
 #' @export
-src_translate_env.src_vertica <- function(x) {
-  sql_variant(scalar = vertica_scalar_func,
-  window = vertica_window_func,
-  aggregate = vertica_agg_func
+src_translate_env.src_vector <- function(x) {
+  sql_variant(scalar = vector_scalar_func,
+  window = vector_window_func,
+  aggregate = vector_agg_func
   )
 }
 
-# Queries the database for UDFs, and appropriately "registers" them in vertica.dplyr
+# Queries the database for UDFs, and appropriately "registers" them in vector.dplyr
 import_udf <- function(src) {
   aggregates <- list_udf(src,"aggregate")
   scalars <- list_udf(src,"scalar")
   transforms <- list_udf(src,"transform")
   
   agg_funs <- lapply(as.list(as.character(aggregates[["function.names"]])),
-                     vertica_udf,
+                     vector_udf,
                      transform=FALSE)
 
   names(agg_funs) <- as.character(aggregates[["function.names"]])  
 
   scalar_funs <- lapply(as.list(as.character(scalars[["function.names"]])),
-                        vertica_udf,      
+                        vector_udf,      
                         transform=FALSE)
 
   names(scalar_funs) <- as.character(scalars[["function.names"]])  
 
   transform_funs <- lapply(as.list(as.character(transforms[["function.names"]])),
-                           vertica_udf,
+                           vector_udf,
                            transform=TRUE)
 
   names(transform_funs) <- as.character(transforms[["function.names"]])  
   
-  vertica_agg_func <- list2env(agg_funs, dplyr:::copy_env(vertica_agg_func))
-  vertica_scalar_func <- list2env(scalar_funs, dplyr:::copy_env(vertica_scalar_func))
-  vertica_window_func <- list2env(transform_funs, dplyr:::copy_env(vertica_window_func))
+  vector_agg_func <- list2env(agg_funs, dplyr:::copy_env(vector_agg_func))
+  vector_scalar_func <- list2env(scalar_funs, dplyr:::copy_env(vector_scalar_func))
+  vector_window_func <- list2env(transform_funs, dplyr:::copy_env(vector_window_func))
 
-  assign("src_translate_env.src_vertica", function(x) {
+  assign("src_translate_env.src_vector", function(x) {
     sql_variant(
-      scalar = vertica_scalar_func,
-      window = vertica_window_func,
-      aggregate = vertica_agg_func
+      scalar = vector_scalar_func,
+      window = vector_window_func,
+      aggregate = vector_agg_func
       )
   }, envir = parent.frame(n=2))
 
@@ -281,7 +307,7 @@ is.schema_table <- function(tablename) {
 #    tablename = '"schema_name"."table_name"'
 #  - tablename is a string that doesn't match the above pattern:
 #    then tablename is considered to be the name of a table and the name of schema
-#    is taken from the value of the "dplyr.vertica_default_schema" option
+#    is taken from the value of the "dplyr.vector_default_schema" option
 #    which is set by default to be "public".
 # Returns a list with schema and table string elements.
 #' @export
@@ -292,7 +318,7 @@ get_schema_table <- function(tablename) {
     schema <- sub('^"(.*?)"\\."(.*)"$', "\\1", tablename, perl=T)
     table <- sub('^"(.*?)"\\."(.*)"$', "\\2", tablename, perl=T)
   } else {
-    schema <- getOption("dplyr.vertica_default_schema")
+    schema <- getOption("dplyr.vector_default_schema")
     table <- tablename
   }
   list(schema=schema, table=table)
@@ -302,7 +328,7 @@ get_schema_table <- function(tablename) {
 # In a way, it is a slightly more complex identifier than dplyr would assume,
 # so cannot assign 'ident' class to it as it would break many things.
 # If table name isn't fully specified (schema name is absent), the default schema name 
-# stored in the "dplyr.vertica_default_schema" option is used.
+# stored in the "dplyr.vector_default_schema" option is used.
 #' @export
 ident_schema_table <- function(tablename) {
   n <- get_schema_table(tablename)
