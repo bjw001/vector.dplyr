@@ -192,10 +192,7 @@ vector_scalar_func <- sql_translator(
   , date_part = function(unit, date) build_sql("date_part('", unit, "',", date, ")")
   , date_trunc = function(unit, date) build_sql("date_trunc(", unit, ",", date, ")")
   , date = function() build_sql("CAST(LOCAL_TIMESTAMP AS TIMESTAMP)")
-<<<<<<< HEAD
   , log = function(value) build_sql("log(", value, ")")
-=======
->>>>>>> f1b3c628560edf2ba1561890a7ce3bd00f6bdfb8
   )
 
 # Window Functions
